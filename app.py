@@ -1,29 +1,49 @@
 import streamlit as st
+import pandas as pd
 import joblib
-import numpy as np
 
-# Load model K-Means
-model = joblib.load('kmeans_model.pkl')
+kmeans = joblib.load('kmeans_model.pkl')
+scaler = joblib.load('scaler.pkl')
+pca = joblib.load('pca.pkl')
 
-# Judul aplikasi
-st.title("Prediksi Cluster dengan K-Means")
-st.write("Gunakan slider di bawah untuk memasukkan data baru dan prediksi cluster.")
+st.title('User Behavior Clustering App')
 
-# Input fitur dengan slider
-st.header("Input Data Baru:")
-sepal_length = st.slider("Sepal Length (cm)", min_value=4.0, max_value=8.0, step=0.1, value=5.0)
-sepal_width = st.slider("Sepal Width (cm)", min_value=2.0, max_value=4.5, step=0.1, value=3.5)
-petal_length = st.slider("Petal Length (cm)", min_value=1.0, max_value=7.0, step=0.1, value=1.4)
-petal_width = st.slider("Petal Width (cm)", min_value=0.1, max_value=2.5, step=0.1, value=0.2)
+with st.form(key='user_input_form'):
+    st.subheader("Input User Data")
 
-# Tombol prediksi
-if st.button("Prediksi"):
-    # Format input untuk model
-    new_data = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
-    
-    # Prediksi cluster
-    predicted_cluster = model.predict(new_data)
-    
-    # Tampilkan hasil prediksi
-    st.subheader("Hasil Prediksi:")
-    st.write(f"Data baru masuk ke cluster: *{predicted_cluster[0]}*")
+    app_usage = st.number_input("App Usage Time (min/day)", min_value=0, max_value=1440, step=1)
+    screen_on_time = st.number_input("Screen On Time (hours/day)", min_value=0.0, max_value=24.0, step=0.1)
+    battery_drain = st.number_input("Battery Drain (mAh/day)", min_value=0, max_value=5000, step=10)
+    apps_installed = st.number_input("Number of Apps Installed", min_value=0, max_value=500, step=1)
+    data_usage = st.number_input("Data Usage (MB/day)", min_value=0.0, max_value=10000.0, step=0.1)
+    age = st.number_input("Age", min_value=18, max_value=100, step=1)
+
+    submit_button = st.form_submit_button(label='Predict Cluster')
+
+if submit_button:
+    try:
+        input_data = [
+            app_usage,
+            screen_on_time,
+            battery_drain,
+            apps_installed,
+            data_usage,
+            age
+        ]
+        input_df = pd.DataFrame([input_data], columns=[
+            'App Usage Time (min/day)', 'Screen On Time (hours/day)',
+            'Battery Drain (mAh/day)', 'Number of Apps Installed',
+            'Data Usage (MB/day)', 'Age'
+        ])
+
+        scaled_input = scaler.transform(input_df)
+
+        pca_input = pca.transform(scaled_input)
+
+        cluster = kmeans.predict(pca_input)
+        cluster_label = cluster[0]
+
+        st.success(f"The predicted cluster is: **{cluster_label}**")
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
