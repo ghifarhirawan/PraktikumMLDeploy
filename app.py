@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
@@ -6,7 +7,20 @@ kmeans = joblib.load('kmeans_model.pkl')
 scaler = joblib.load('scaler.pkl')
 pca = joblib.load('pca.pkl')
 
+cluster_descriptions = {
+    0: "Cluster 0: Pengguna pasif dengan waktu penggunaan aplikasi rendah dan konsumsi data minimal. Kemungkinan hanya menggunakan fitur dasar.",
+    1: "Cluster 1: Power users dengan waktu penggunaan aplikasi sangat tinggi, konsumsi data besar, dan banyak aplikasi terinstal. Sangat aktif menggunakan smartphone.",
+    2: "Cluster 2: Pengguna sedang, sering menggunakan smartphone tetapi tidak seintensif power users. Waktu penggunaan aplikasi rata-rata dengan konsumsi data sedang.",
+    3: "Cluster 3: Pengguna senior aktif dengan waktu penggunaan aplikasi moderat dan konsumsi data cukup besar. Didominasi oleh pengguna berusia lebih tua."
+}
+
 st.title('User Behavior Clustering App')
+
+st.sidebar.header("About the App")
+st.sidebar.write("""
+    Aplikasi ini memprediksi cluster perilaku pengguna smartphone berdasarkan
+    pola penggunaan aplikasi, waktu layar menyala, konsumsi baterai, dan lainnya.
+""")
 
 with st.form(key='user_input_form'):
     st.subheader("Input User Data")
@@ -37,13 +51,13 @@ if submit_button:
         ])
 
         scaled_input = scaler.transform(input_df)
-
         pca_input = pca.transform(scaled_input)
 
         cluster = kmeans.predict(pca_input)
         cluster_label = cluster[0]
 
         st.success(f"The predicted cluster is: **{cluster_label}**")
+        st.info(cluster_descriptions[cluster_label])
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
